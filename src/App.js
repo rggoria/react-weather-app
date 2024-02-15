@@ -7,6 +7,7 @@ import Information from "./Components/Information";
 
 function App() {
   const [mode, setMode] = useState(true);
+  const [fetchData, setFetchData] = useState(null);
 
   const appTheme = createTheme({
     palette: {
@@ -18,11 +19,19 @@ function App() {
     setMode((prevMode) => !prevMode);
   };
 
+  const fetchGeolocationData = (data) => {
+    setFetchData(data);
+  };
+
   return (
     <ThemeProvider theme={appTheme}>
       <Box className={mode ? "modeDark" : "modeLight"}>
-        <Navbar mode={mode} toggleMode={toggleMode} className="navbar" />
-        <Information />
+        <Navbar
+          mode={mode}
+          toggleMode={toggleMode}
+          fetchGeolocationData={fetchGeolocationData}
+        />
+        <Information fetchData={fetchData} />
       </Box>
       <Footer className="footer" />
     </ThemeProvider>

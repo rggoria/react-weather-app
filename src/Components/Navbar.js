@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -6,11 +7,66 @@ import {
   FormControlLabel,
   Switch,
   Box,
+  TextField,
+  Button,
+  Container,
+  InputAdornment,
+  Snackbar,
+  Tooltip,
+  Menu,
+  MenuItem,
 } from "@mui/material";
-import CloudIcon from "@mui/icons-material/Cloud";
 import { styled } from "@mui/material/styles";
+import {
+  Cloud,
+  Close,
+  Error,
+  Search,
+  Settings,
+  Place,
+} from "@mui/icons-material";
+import getGeolocation from "../config/geolocation";
+import getCity from "../config/city";
 
-const Navbar = ({ mode, toggleMode }) => {
+const Navbar = ({ mode, toggleMode, fetchGeolocationData }) => {
+  const [searchArea, setSearchArea] = useState("");
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [anchorElUser, setAnchorElUser] = useState(null);
+
+  const handleOpenUserMenu = (event) => {
+    setAnchorElUser(event.currentTarget);
+  };
+
+  const handleCloseUserMenu = () => {
+    setAnchorElUser(null);
+  };
+
+  const handleSearch = (e) => {
+    setSearchArea(e.target.value);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!searchArea) {
+      setOpenSnackbar(true);
+      return;
+    }
+    try {
+      const data = await getCity(searchArea);
+      if (data === undefined) {
+        setOpenSnackbar(true);
+      } else {
+        fetchGeolocationData(data);
+      }
+    } catch (error) {
+      setOpenSnackbar(true);
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+  };
+
   const MaterialUISwitch = styled(Switch)(({ theme }) => ({
     width: 62,
     height: 34,
@@ -59,44 +115,126 @@ const Navbar = ({ mode, toggleMode }) => {
     },
   }));
 
+  const handleLocation = async () => {
+    try {
+      const data = await getGeolocation();
+      fetchGeolocationData(data);
+    } catch (error) {
+      setOpenSnackbar(true);
+    }
+  };
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
         <Toolbar>
-          <IconButton
-            size="large"
-            edge="start"
-            color="inherit"
-            aria-label="menu"
-            sx={{ mr: 2 }}
-          >
-            <CloudIcon />
-            <Typography
-              variant="h6"
-              noWrap
-              component="div"
-              sx={{
-                marginLeft: 1,
-                flexGrow: 1,
-                display: { xs: "none", sm: "block" },
-              }}
-            >
-              RG.
+          <Box display="flex" alignItems="center">
+            <Cloud style={{ fontSize: 32, marginRight: 8 }} />
+            <Typography variant="h6" noWrap>
+              Weather App
             </Typography>
-          </IconButton>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ flexGrow: 1, textAlign: "center" }}
+          </Box>
+          <Container
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flex: 1,
+            }}
           >
-            Weather App
-          </Typography>
-          <FormControlLabel
-            control={<MaterialUISwitch sx={{ m: 1 }} />}
-            label="Mode"
-            onClick={toggleMode}
-            checked={mode}
-          />
+            <form
+              onSubmit={handleSubmit}
+              style={{ display: "flex", alignItems: "center" }}
+            >
+              <TextField
+                required
+                placeholder="Search"
+                value={searchArea}
+                variant="outlined"
+                size="small"
+                sx={{ width: "auto" }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search />
+                    </InputAdornment>
+                  ),
+                }}
+                onChange={handleSearch}
+              />
+              <Snackbar
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                open={openSnackbar}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+                message={
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <Error sx={{ mr: 1, color: "error.main" }} />
+                    <span>Oops! The city you entered is not valid.</span>
+                  </div>
+                }
+                action={
+                  <IconButton
+                    size="small"
+                    color="inherit"
+                    onClick={handleCloseSnackbar}
+                  >
+                    <Close fontSize="small" />
+                  </IconButton>
+                }
+              />
+              <Button
+                variant="contained"
+                style={{ marginLeft: "1rem", backgroundColor: "green" }}
+                type="submit"
+              >
+                Submit
+              </Button>
+            </form>
+          </Container>
+
+          <Box sx={{ flexGrow: 0 }}>
+            <Tooltip title="Open settings">
+              <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                <Settings />
+              </IconButton>
+            </Tooltip>
+            <Menu
+              sx={{ mt: "45px" }}
+              id="menu-appbar"
+              anchorEl={anchorElUser}
+              anchorOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+              open={Boolean(anchorElUser)}
+              onClose={handleCloseUserMenu}
+            >
+              <MenuItem>
+                <FormControlLabel
+                  control={<MaterialUISwitch sx={{ m: 1 }} />}
+                  label="Switch Mode"
+                  onChange={toggleMode}
+                  checked={mode}
+                />
+              </MenuItem>
+              <MenuItem>
+                <Button
+                  variant="contained"
+                  startIcon={<Place />}
+                  onClick={handleLocation}
+                  fullWidth
+                >
+                  Get Location
+                </Button>
+              </MenuItem>
+            </Menu>
+          </Box>
         </Toolbar>
       </AppBar>
     </Box>
